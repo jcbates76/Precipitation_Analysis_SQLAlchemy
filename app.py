@@ -1,10 +1,14 @@
 # app.py file
+
+# Dependencies and Setup
 import numpy as np
+import pandas as pd
+import datetime as dt
 
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine, inspect, func
 
 from flask import Flask, jsonify
 
@@ -12,7 +16,7 @@ from flask import Flask, jsonify
 #################################################
 # Database Setup
 #################################################
-engine = create_engine("sqlite:///titanic.sqlite")
+engine = create_engine("sqlite:///Resources/hawaii.sqlite", echo=False)
 
 # reflect an existing database into a new model
 Base = automap_base()
@@ -20,7 +24,8 @@ Base = automap_base()
 Base.prepare(engine, reflect=True)
 
 # Save reference to the table
-Passenger = Base.classes.passenger
+measurement = Base.classes.measurement
+station = Base.classes.station
 
 #################################################
 # Flask Setup
@@ -32,54 +37,92 @@ app = Flask(__name__)
 # Flask Routes
 #################################################
 
+#################################################
+# Route - Home Page
+#################################################
 @app.route("/")
 def welcome():
-    """List all available api routes."""
+    """Home page."""
     return (
         f"Available Routes:<br/>"
-        f"/api/v1.0/names<br/>"
-        f"/api/v1.0/passengers"
+        F"/api/v1.0/precipitation<br/>"
+        f"/api/v1.0/stations<br/>"
+        f"/api/v1.0/tobs<br/>"
+        f"/api/v1.0/<start><br/>"
+        f"/api/v1.0/<start>/<end><br/>"
     )
 
-
-@app.route("/api/v1.0/names")
-def names():
+#################################################
+# Route - Precipitation
+#################################################
+@app.route("/api/v1.0/precipitation")
+def precipitation():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of all passenger names"""
-    # Query all passengers
-    results = session.query(Passenger.name).all()
+    """Return a dictionary of precipitation by date."""
+    # Query precipitation by date
+    results = session.query(measurement.date, measurement.prcp)\
+        .filter(measurement.date >= "2016-08-23").all()
 
     session.close()
 
-    # Convert list of tuples into normal list
-    all_names = list(np.ravel(results))
+    # Create a dictionary from the row data
+    precipitation = []
 
-    return jsonify(all_names)
+    for date, prcp in results:
+        precipitation_dict = {}
+        # ASK - DO I CHANGE THIS TO HAVE THE DATE AS THEY KEY AND JUST RETURN THE prcp AS THE VALUE OF THAT DATE?
+        precipitation_dict['date'] = date
+        precipitation_dict['prcp'] = prcp
+        precipitation.append(precipitation_dict)
 
+    # Return the dictionary
+    return jsonify(precipitation)
 
-@app.route("/api/v1.0/passengers")
-def passengers():
+#################################################
+# Route - Stations
+#################################################
+@app.route("/api/v1.0/stations")
+def stations():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of passenger data including the name, age, and sex of each passenger"""
-    # Query all passengers
-    results = session.query(Passenger.name, Passenger.age, Passenger.sex).all()
+    """Return a JSON list of stations."""
+    # Query a list of stations.
+    results = session.query(measurement.station).group_by(measurement.station)\
+        .order_by(measurement.station.desc()).all()
 
     session.close()
 
-    # Create a dictionary from the row data and append to a list of all_passengers
-    all_passengers = []
-    for name, age, sex in results:
-        passenger_dict = {}
-        passenger_dict["name"] = name
-        passenger_dict["age"] = age
-        passenger_dict["sex"] = sex
-        all_passengers.append(passenger_dict)
+    # Convert list of tuples into a normal list
+    all_stations = list(np.ravel(results))
 
-    return jsonify(all_passengers)
+    return jsonify(all_stations)
+
+
+#################################################
+# Route - Temperature
+#################################################
+@app.route("/api/v1.0/tobs")
+def temperature():
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    """Return a JSON list of stations."""
+    # Query a list of stations.
+    tobs_results = session.query(measurement.tobs)\
+        .filter(measurement.date >= "2016-08-23", measurement.station == "USC00519281").all()
+
+    session.close()
+
+    # Convert list of tuples into a normal list
+    tobs_result_list = list(np.ravel(tobs_results))
+
+    return jsonify(tobs_result_list)
+
+
+
 
 
 if __name__ == '__main__':
