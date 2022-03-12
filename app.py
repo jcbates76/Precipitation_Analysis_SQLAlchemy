@@ -48,7 +48,7 @@ def welcome():
         F"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br/>"
+        f"/api/v1.0/start/<start><br/>"
         f"/api/v1.0/<start>/<end><br/>"
     )
 
@@ -121,9 +121,21 @@ def temperature():
 
     return jsonify(tobs_result_list)
 
+#################################################
+# Route - Min/Max/Avg Temp w/ Start Date
+#################################################
 
+@app.route("/api/v1.0/start/")
+def temp_start_date():
 
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
 
+    """Calculate the min, max, and average temperature
+    the start date is provided by the user, or a 404 if not."""
+    start_results = session.query(measurement.tobs)
+
+    return jsonify(start_results)
 
 if __name__ == '__main__':
     app.run(debug=True)
