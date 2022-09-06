@@ -1,8 +1,8 @@
-# sqlalchemy-challenge
+# Precipitation_Analysis_SQLAlchemy
 The following project explores the use of sqlalchemy and Flask API's.
 
 ## Climate Analysis and Exploration
-* Use SQLLachemy create_engine to connect to the sqlite database.
+* Use SQLAlchemy create_engine to connect to the sqlite database.
 * Use SQLAlchemy automap_base() to reflect tables into classes and save a reference to those classes called Station and Measurement.
 * Link Python to the database by creating an SQLAlchemy session.
 
